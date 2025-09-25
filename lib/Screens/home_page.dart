@@ -3,6 +3,8 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:simple_todo/DataBase/database.dart';
 import 'package:simple_todo/Screens/todo_item.dart';
 
 import 'DialogBox.dart';
@@ -18,11 +20,35 @@ class HomePage extends StatefulWidget{
 class MyHomePageState extends State<HomePage>{
   final TextEditingController controller = TextEditingController();
 
+  final _myBox =Hive.box("myBox");
+  var db = TodoDataBase();//
+
+  @override
+  void initState(){
+    if (_myBox.get("TODOLIST")==null){
+      db.createData();
+    }else{
+      db.loadData();
+    }
+
+    super.initState();
+
+  }
+
+  void Delete(int index){
+    setState(() {
+      db.TodoList.removeAt(index);
+      db.updateDatabase();
+    });
+  }
+
+
   void Save(){
     setState(() {
-      TodoList.add([controller.text, false]);
+      db.TodoList.add([controller.text, false]);
       controller.clear();
       Navigator.of(context).pop();
+      db.updateDatabase();
     });
   }
 
@@ -40,7 +66,7 @@ class MyHomePageState extends State<HomePage>{
       });
     });
   }
-  List TodoList = [["Task 1", false], ["Task 2", false], ["Task 3", false], ["Task 4", false]];
+  //List TodoList = [["Task 1", false], ["Task 2", false], ["Task 3", false], ["Task 4", false]];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,7 +77,8 @@ class MyHomePageState extends State<HomePage>{
         elevation: 50,
       ),
       body: ListView(
-        children: TodoList.map((e) => TodoItem(isChecked: e[1], TodoText: e[0], onChanged: (value) => setState(() => e[1] = value!))).toList()
+        children: db.TodoList.map((e) => TodoItem(isChecked: e[1], TodoText: e[0], onChanged: (value) => setState(() => {e[1] = value!, db.updateDatabase() },
+        ), onPressed: (BuildContext ) { Delete(db.TodoList.indexOf(e)); },)).toList()
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.deepOrangeAccent,
